@@ -1,6 +1,6 @@
 {
   "name": "registro_chamados_app",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "Registro de Chamados",
   "main": "main.js",
   "scripts": {
@@ -10,7 +10,7 @@
   "author": "Arthur Renzo",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^28.0.0",
+    "electron": "^34.2.0",
     "electron-builder": "^24.13.3"
   },
   "dependencies": {
@@ -28,18 +28,15 @@
       "!dist/"
     ],
     "extraFiles": [
-  {
-    "from": "../Backend/dist/backend.exe",
-    "to": "resources/backend.exe"
-  },
-  {
-    "from": "../Backend/dist/api.exe",
-    "to": "resources/api.exe"
-  }
-],
-
-
-
+      {
+        "from": "resources/backend.exe",
+        "to": "backend.exe"
+      },
+      {
+        "from": "resources/api.exe",
+        "to": "api.exe"
+      }
+    ],
     "win": {
       "target": [
         "nsis",
