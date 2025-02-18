@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Captura os elementos da interface
-    const btnSalvar = document.getElementById("btnSalvar");
+    const btnSalvar = document.getElementById("btnSalvar")
     const unidadesContainer = document.getElementById('unidades-container');
     const totalChamadosSpan = document.getElementById('total-chamados-numero');
     const searchInput = document.getElementById('search');
@@ -20,6 +20,10 @@ document.addEventListener('DOMContentLoaded', () => {
         "CAPs": ["CAPS III AD Alves Dias", "CAPS III Álc Drog Alvarenga", "CAPS III Álc. e Drog Cent", "CAPS III Álc. e Drog Inf. Juv", "CAPS III Alvarenga", "CAPS III Alves Dias", "CAPS III Centro", "CAPS III Farina", "CAPS III Rudge Ramos", "CAPS III Selecta", "CAPS Inf. Juvenil"],
         "Outros": ["Almoxarifado Central", "CEO Alvarenga", "CEO Nova Petrópolis", "CEO Silvina", "CER", "Chamado errado / Sem localização", "Comunicação", "Consultório na Rua", "Departamento de Administração da Saúde", "Departamento de Apoio a Gestão do SUS", "Departamento de Atenção a Saúde e Vigilância", "Departamento de Atenção Básica e Gestão do Cuidado", "Departamento de Atenção Especializada", "Departamento de Atenção Hospitalar, Urgências  Emergências", "Divisão Ambulatorial", "Divisão Assistência Farmacêutica", "Divisão de Adm. De Bens, Serv. E Pessoal - SS", "Divisão de Adm. Do Fundo Municipal de Saúde", "Divisão de Compras", "Divisão de Contratos", "Divisão de Educação Permanente e Gestão Participativa", "Divisão de Patrimônio", "Divisão de Planejamento em Saúde", "Divisão de Saúde Bucal", "Divisão de Saúde do Trabalhador e do Meio Ambiente", "Divisão de Saúde Mental", "Divisão de Unidade Básica de Saúde", "Divisão de Veterinária e Controle de Zoonoses", "Divisão de Vigilância Epidemiológica", "Divisão de Vigilância Sanitária", "Divisão Infraestrutura (Corporativo)", "Divisão Regulação", "Divisão Técnico Assistencial", "Dunacor", "Escola de Saúde", "Farmácia de Medicamentos Especializados - FME", "FMABC", "FUNCRAF", "Gabinete da Secretaria de Saúde", "GSS | Gabinete Secretaria da Saúde", "HA - Hospital Anchieta", "HC - Hospital das Clinicas", "HMU - Hospital da Mulher", "Hospital da Reabilitação - ABC", "Hospital de Olhos", "Hospital Municipal de Olhos.", "HU - Hospital Urgência", "IML Demarchi - Corpo de Delito", "Juridico", "NEU - Núcleo Educação de Urgência", "Nutrarte", "Outras Secretarias", "PA Psiquiátrico", "PA Taboão", "Parque Estoril (SS)", "POLIALVARENGA", "POLICENTRO", "POLIMAGEM", "Recursos Humanos", "Residências Terapêuticas", "SAAJ - Serv. Atendimento Ação Judicial", "Sala de Choque", "SAME", "SAMU - Avançado", "SAMU - Basica", "SAMU - Serv. Administrativos", "Seção da Central de Regulação em Saúde", "Seção de Auditoria em Saúde", "Seção de Controle e Avaliação", "Seção de Educação em Saúde", "Seção de Gestão Participativa", "Seção de Informação para gestão", "Seção de Lab. Municipal de Saúde Pública", "Seção de Orçamento e Planej. Em Saúde", "Seção de Padronização e Programação", "Seção de Programação", "Seção de Unidade, Org. e Acesso em Assistência Farmacêutica", "Seção de Verificação de Óbitos", "Secretária da Administração", "Secretária de Finanças", "Serviço de Expediente", "Serviço e Transporte Sanitário e Administrativo", "SETIH - Transporte InterHospitalar - Avançado", "SETIH - Transporte InterHospitalar - Basico", "SIGMA", "UA - Unidade de Acolhimento Transitório", "UGP", "Unidade de Coordenação de Programas", "Unidade Gestora do Projeto", "Unidades Externas"]
     };
+
+    const BACKEND_URL = "http://127.0.0.1:5001";
+    const API_URL = "http://127.0.0.1:5002";
+    
 
     let contadores = carregarContadores();
     let totalChamados = calcularTotalChamados();
@@ -124,14 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function salvarDados() {
         try {
-            // Verifica se o backend está rodando antes de tentar salvar os dados
-            const response = await fetch('http://127.0.0.1:5001/contadores');
-            
-            if (!response.ok) {
-                throw new Error('Servidor Flask não está rodando.');
-            }
-    
-            const salvarResponse = await fetch('http://127.0.0.1:5001/salvar_dados', {
+            await esperarBackend();
+            const salvarResponse = await fetch(`${BACKEND_URL}/salvar_dados`, {  // Alterado para BACKEND_URL
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contadores })
@@ -141,14 +139,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.sucesso) {
                 mostrarMensagem("✅ Dados salvos com sucesso!");
             } else {
-                console.error("⚠️ Erro ao salvar os dados no backend:", data.erro);
-                mostrarMensagem("⚠️ Erro ao salvar os dados: " + (data.erro || 'Erro desconhecido'));
+                mostrarMensagem("⚠️ Erro ao salvar os dados.");
             }
         } catch (error) {
-            console.error("❌ Erro na requisição:", error);
-            mostrarMensagem("❌ O servidor Flask não está rodando.");
+            mostrarMensagem("❌ Erro: Backend não está rodando.");
         }
     }
+    
+    
+    
     
     function carregarContadores() {
         const contadoresSalvos = localStorage.getItem('contadores');
@@ -161,7 +160,8 @@ document.addEventListener('DOMContentLoaded', () => {
     async function esperarBackend() {
         for (let i = 0; i < 10; i++) {  // Tenta por 10 segundos
             try {
-                const response = await fetch('http://127.0.0.1:5001/ping');
+                const response = await fetch(`${API_URL}/ping`);
+
                 if (response.ok) {
                     console.log("✅ Backend está rodando!");
                     return;
