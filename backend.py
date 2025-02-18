@@ -10,6 +10,9 @@ import getpass  # Para obter o nome do usuário logado
 from flask import Flask, request, jsonify
 from flask_cors import CORS  
 
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
+
 app = Flask(__name__)
 CORS(app)  
 
@@ -46,7 +49,7 @@ def carregar_dados_planilha():
             df = pd.read_excel(planilha_path)
             return dict(zip(df['Unidade'], df['Chamados']))
         except Exception as e:
-            print("❌ Erro ao carregar dados da planilha:", e)
+            print(" Erro ao carregar dados da planilha:", e)
             return {}
     return {}
 
@@ -79,33 +82,50 @@ def zerar_chamados():
     try:
         with open(DATA_FILE, "w") as file:
             json.dump(chamados, file)
-        print("✅ Todos os chamados foram zerados.")
+        print(" Todos os chamados foram zerados.")
     except Exception as e:
-        print("❌ Erro ao salvar o arquivo JSON:", e)
+        print(" Erro ao salvar o arquivo JSON:", e)
         return jsonify({"sucesso": False, "erro": f"Erro ao salvar JSON: {str(e)}"}), 500
 
     return jsonify({"sucesso": True, "mensagem": "Todos os chamados foram zerados com sucesso!"})
     
+    
+if not os.path.exists(PASTA_USUARIO):
+    os.makedirs(PASTA_USUARIO)
+    print(f" Pasta criada: {PASTA_USUARIO}")
 
-@app.route("/salvar_dados", methods=["POST"])
+@app.route('/salvar_dados', methods=['POST'])
 def salvar_dados():
-    data = request.get_json()
-    print("📩 Dados recebidos:", data)  # Debug
-
-    if not data or "contadores" not in data:
-        return jsonify({"sucesso": False, "erro": "Dados inválidos"}), 400
-
-    contadores = data["contadores"]
-
-    # Salvar JSON
     try:
-        with open(DATA_FILE, "w") as file:
-            json.dump(contadores, file)
-        print(f"✅ Dados salvos no arquivo JSON: {DATA_FILE}")
-    except Exception as e:
-        print("❌ Erro ao salvar o arquivo JSON:", e)
-        return jsonify({"sucesso": False, "erro": f"Erro ao salvar JSON: {str(e)}"}), 500
+        print("🔍 Iniciando o processamento dos dados...")
+        data = request.get_json()
+        print("📩 Dados recebidos no backend:", data)  
 
+        if not data or "contadores" not in data:
+            print("❌ ERRO: Dados inválidos recebidos!")
+            return jsonify({"sucesso": False, "erro": "Dados inválidos"}), 400
+
+        contadores = data["contadores"]
+        print(f"✅ Salvando os seguintes dados: {contadores}")
+
+        # Criar DataFrame e salvar em Excel
+        planilha_path = obter_nome_planilha()
+        print(f"📂 Salvando planilha em: {planilha_path}")
+
+        df_novo = pd.DataFrame(list(contadores.items()), columns=["Unidade", "Chamados"])
+        df_novo.to_excel(planilha_path, index=False, engine="openpyxl")
+
+        print("✅ Planilha salva com sucesso!")
+
+        # 🔹 Adicionando retorno explícito
+        resposta = {"sucesso": True, "mensagem": "Dados salvos com sucesso!"}
+        print("📤 Enviando resposta para o frontend:", resposta)  
+
+        return jsonify(resposta)
+
+    except Exception as e:
+        print("❌ ERRO AO SALVAR DADOS:", e)  # Isso imprimirá o erro no terminal
+        return jsonify({"sucesso": False, "erro": f"Erro ao salvar: {str(e)}"}), 500
     # Criar ou atualizar a planilha
     try:
         planilha_path = obter_nome_planilha()
@@ -113,7 +133,8 @@ def salvar_dados():
         if verificar_ou_criar_planilha():  # Verifica se deve criar uma nova planilha
             # Cria uma nova planilha
             df_novo = pd.DataFrame(list(contadores.items()), columns=["Unidade", "Chamados"])
-            df_novo.to_excel(planilha_path, index=False)
+            df_novo.to_excel(planilha_path, index=False, engine="openpyxl")
+
             print(f"📂 Nova planilha criada em: {planilha_path}")
         else:
             # Atualiza a planilha existente
@@ -121,10 +142,10 @@ def salvar_dados():
             df_novo = pd.DataFrame(list(contadores.items()), columns=["Unidade", "Chamados"])
             df_atualizado = pd.concat([df_existente, df_novo]).groupby("Unidade", as_index=False).sum()
             df_atualizado.to_excel(planilha_path, index=False)
-            print(f"📂 Planilha atualizada em: {planilha_path}")
+            print(f" Planilha atualizada em: {planilha_path}")
 
     except Exception as e:
-        print("❌ Erro ao salvar a planilha:", e)
+        print(" Erro ao salvar a planilha:", e)
         return jsonify({"sucesso": False, "erro": f"Erro ao salvar planilha: {str(e)}"}), 500
 
     return jsonify({"sucesso": True, "mensagem": "Dados salvos com sucesso!"})
@@ -142,15 +163,15 @@ def salvar_dados():
             df_novo = pd.DataFrame(list(chamados.items()), columns=["Unidade", "Chamados"])
             df_atualizado = df_existente.add(df_novo.set_index('Unidade'), fill_value=0).reset_index()  # Atualiza os dados existentes
             df_atualizado.to_excel(planilha_path, index=False)
-            print(f"📂 Planilha atualizada em: {planilha_path}")
+            print(f" Planilha atualizada em: {planilha_path}")
         else:
             # Se não existir, cria uma nova planilha
             df_novo = pd.DataFrame(list(chamados.items()), columns=["Unidade", "Chamados"])
             df_novo.to_excel(planilha_path, index=False)
-            print(f"📂 Planilha criada em: {planilha_path}")
+            print(f" Planilha criada em: {planilha_path}")
 
     except Exception as e:
-        print("❌ Erro ao salvar a planilha:", e)
+        print(" Erro ao salvar a planilha:", e)
         return jsonify({"sucesso": False, "erro": f"Erro ao salvar planilha: {str(e)}"}), 500
 
     return jsonify({"sucesso": True, "mensagem": "Dados salvos com sucesso!"})
@@ -163,7 +184,7 @@ def get_contadores():
             chamados = json.load(file)
         return jsonify(chamados)
     except Exception as e:
-        print("❌ Erro ao ler o arquivo JSON:", e)
+        print(" Erro ao ler o arquivo JSON:", e)
         return jsonify({"erro": "Erro ao ler os contadores"}), 500
 
 @app.route("/total_chamados", methods=["GET"])
@@ -175,7 +196,7 @@ def get_total_chamados():
         total = sum(chamados.values())
         return jsonify({"total": total})
     except Exception as e:
-        print("❌ Erro ao calcular o total de chamados:", e)
+        print(" Erro ao calcular o total de chamados:", e)
         return jsonify({"erro": "Erro ao calcular o total de chamados"}), 500
 
 if __name__ == "__main__":
@@ -311,9 +332,11 @@ def carregar_planilha():
             messagebox.showinfo("Aviso", "Planilha não encontrada. Criando nova planilha.")
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao carregar a planilha: {e}")
-
+ 
 def salvar_planilha():
     """Salva os dados na planilha."""
+    print(f" Tentando salvar planilha em: {PASTA_USUARIO}")
+
     df = pd.DataFrame(list(contadores.items()), columns=["Unidade", "Chamados"])
     try:
         df.to_excel(caminho_planilha, index=False)
@@ -432,5 +455,3 @@ if __name__ == "__main__":
     root = criar_interface()
     atualizar_interface()  # Carrega a interface inicial
     root.mainloop()
-    
-    
