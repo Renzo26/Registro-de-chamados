@@ -6,10 +6,21 @@ const fs = require('fs');
 let backendProcess;
 let apiProcess;
 let mainWindow;
+let backendPath = path.join(process.resourcesPath, 'backend.exe');
+let apiPath = path.join(process.resourcesPath, 'api.exe');
+
 
 function startBackend() {
-    const backendPath = path.join(process.resourcesPath, 'resources', 'backend.exe');
-    const apiPath = path.join(process.resourcesPath, 'resources', 'api.exe');
+    const backendPath = process.env.NODE_ENV === 'development'
+        ? path.join(__dirname, 'resources', 'backend.exe')
+        : path.join(process.resourcesPath, 'backend.exe');
+
+    const apiPath = process.env.NODE_ENV === 'development'
+        ? path.join(__dirname, 'resources', 'api.exe')
+        : path.join(process.resourcesPath, 'api.exe');
+
+    console.log(`📂 Backend Path: ${backendPath}`);
+    console.log(`📂 API Path: ${apiPath}`);
 
     if (!fs.existsSync(backendPath)) {
         console.error("❌ Erro: backend.exe não encontrado!", backendPath);
@@ -34,8 +45,6 @@ function startBackend() {
     backendProcess.on('close', (code) => {
         console.error(`⚠️ Backend foi encerrado com código ${code}`);
     });
-
-    console.log("✅ Backend iniciado com sucesso!");
 
     if (!fs.existsSync(apiPath)) {
         console.error("❌ Erro: api.exe não encontrado!", apiPath);
