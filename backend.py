@@ -11,7 +11,27 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS  
 
 import sys
-sys.stdout.reconfigure(encoding='utf-8')
+import os
+
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, 'w', encoding='utf-8')
+else:
+    sys.stdout.reconfigure(encoding='utf-8')
+
+ 
+import logging
+
+# 🔹 Configura o logging corretamente antes de qualquer uso
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+# 🔹 Se houver handlers configurados, limpamos para evitar erros
+logger = logging.getLogger()
+if logger.hasHandlers():
+    logger.handlers.clear()
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+logging.info("✅ Logging configurado corretamente!")
+
 
 app = Flask(__name__)
 CORS(app)  
@@ -217,7 +237,8 @@ def get_total_chamados():
         return jsonify({"erro": "Erro ao calcular o total de chamados"}), 500
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5001, debug=True)
+    app.run(host="0.0.0.0", port=5001, debug=True)
+
 
  
 # --- Configurações ---
