@@ -25,8 +25,24 @@ PASTA_USUARIO = Path.home() / "Documents" / "Planilhas Chamados"
 # Garante que a pasta existe
 PASTA_USUARIO.mkdir(parents=True, exist_ok=True)
 
+@app.route('/ping', methods=['GET'])
+def ping():
+    return jsonify({"status": "ok"}), 200
+
+
 # Arquivo JSON para salvar os contadores
 DATA_FILE = PASTA_USUARIO / "chamados.json"
+
+@app.route('/contadores', methods=['GET'])
+def obter_contadores():
+    """Retorna os contadores armazenados no JSON"""
+    try:
+        with open('chamados.json', 'r') as file:
+            contadores = json.load(file)
+        return jsonify({"sucesso": True, "contadores": contadores})
+    except FileNotFoundError:
+        return jsonify({"sucesso": False, "erro": "Arquivo de contadores não encontrado"}), 404
+
 
 # Função para determinar o nome da planilha com base na data atual
 def obter_nome_planilha():
@@ -126,6 +142,7 @@ def salvar_dados():
     except Exception as e:
         print("❌ ERRO AO SALVAR DADOS:", e)  # Isso imprimirá o erro no terminal
         return jsonify({"sucesso": False, "erro": f"Erro ao salvar: {str(e)}"}), 500
+    
     # Criar ou atualizar a planilha
     try:
         planilha_path = obter_nome_planilha()
@@ -315,6 +332,7 @@ def definir_caminho_planilha():
         salvar_arquivo_controle()
     caminho_planilha = PASTA_PLANILHAS / NOME_ARQUIVO.format(data_inicio_planilha.strftime("%Y%m%d"))
     return caminho_planilha
+    
 
 def carregar_planilha():
     """Carrega os dados da planilha, se existir."""
