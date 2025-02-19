@@ -7,6 +7,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const contextMenu = document.getElementById('context-menu');
     const resetContextItem = document.getElementById('reset-context-item');
 
+
+    async function obterContadores() {
+        const response = await fetch(`${BACKEND_URL}/contadores`);
+        const data = await response.json();
+        console.log("🔹 Contadores recebidos:", data);
+    }
+    
+
+    async function salvarDados() {
+        const salvarResponse = await fetch(`${BACKEND_URL}/salvar_dados`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contadores })
+        });
+    
+        const data = await salvarResponse.json();
+        console.log("✅ Resposta do backend:", data);
+    }
+    
     // Verifica se os elementos foram encontrados
     if (!btnSalvar || !unidadesContainer || !totalChamadosSpan || !searchInput || !contextMenu || !resetContextItem) {
         console.error("❌ Erro: Um ou mais elementos não foram encontrados no HTML.");
