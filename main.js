@@ -6,31 +6,39 @@ const fs = require('fs');
 let backendProcess;
 let apiProcess;
 let mainWindow;
-let backendPath = path.join(process.resourcesPath, 'backend.exe');
-let apiPath = path.join(process.resourcesPath, 'api.exe');
+const isDev = process.env.NODE_ENV === 'development';
 
+// 🔹 Corrigindo os caminhos do backend e API
+const backendPath = isDev
+    ? path.join(__dirname, 'resources', 'backend.exe')
+    : path.join(process.resourcesPath, 'backend.exe'); // 🚀 Ajustado!
 
+const apiPath = isDev
+    ? path.join(__dirname, 'resources', 'api.exe')
+    : path.join(process.resourcesPath, 'api.exe'); // 🚀 Ajustado!
+
+console.log(`📂 Tentando iniciar Backend em: ${backendPath}`);
+
+if (!fs.existsSync(backendPath)) {
+    console.error(`❌ Erro: backend.exe não encontrado! Caminho: ${backendPath}`);
+} else {
+    console.log("✅ backend.exe encontrado! Tentando iniciar...");
+}
+
+// 🔹 Função para iniciar o backend e API
 function startBackend() {
-    const backendPath = process.env.NODE_ENV === 'development'
-        ? path.join(__dirname, 'resources', 'backend.exe')
-        : path.join(process.resourcesPath, 'backend.exe');
-
-    const apiPath = process.env.NODE_ENV === 'development'
-        ? path.join(__dirname, 'resources', 'api.exe')
-        : path.join(process.resourcesPath, 'api.exe');
-
     console.log(`📂 Backend Path: ${backendPath}`);
     console.log(`📂 API Path: ${apiPath}`);
 
     if (!fs.existsSync(backendPath)) {
-        console.error("❌ Erro: backend.exe não encontrado!", backendPath);
+        console.error(`❌ Erro: backend.exe não encontrado! Caminho: ${backendPath}`);
         return;
     }
 
     console.log(`🟢 Iniciando backend em: ${backendPath}`);
     backendProcess = spawn(backendPath, [], {
         cwd: path.dirname(backendPath),
-        detached: false,
+        detached: true,
         shell: false
     });
 
@@ -47,14 +55,14 @@ function startBackend() {
     });
 
     if (!fs.existsSync(apiPath)) {
-        console.error("❌ Erro: api.exe não encontrado!", apiPath);
+        console.error(`❌ Erro: api.exe não encontrado! Caminho: ${apiPath}`);
         return;
     }
 
     console.log(`🟢 Iniciando API em: ${apiPath}`);
     apiProcess = spawn(apiPath, [], {
         cwd: path.dirname(apiPath),
-        detached: false,
+        detached: true,
         shell: false
     });
 
@@ -73,6 +81,7 @@ function startBackend() {
     console.log("✅ API iniciada com sucesso!");
 }
 
+// 🔹 Criando a janela principal do Electron
 function createWindow() {
     mainWindow = new BrowserWindow({
         width: 800,
@@ -89,6 +98,7 @@ function createWindow() {
     });
 }
 
+// 🔹 Quando o Electron estiver pronto, inicie o backend e a janela
 app.whenReady().then(() => {
     startBackend();
     createWindow();
@@ -100,16 +110,21 @@ app.whenReady().then(() => {
     });
 });
 
+// 🔹 Encerrar o backend e API quando a janela for fechada
 app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
-        app.quit();
-    }
+    console.log("🛑 Fechando aplicação...");
+
     if (backendProcess) {
         console.log("🛑 Encerrando backend...");
-        backendProcess.kill();
+        backendProcess.kill('SIGTERM');
     }
+
     if (apiProcess) {
         console.log("🛑 Encerrando API...");
-        apiProcess.kill();
+        apiProcess.kill('SIGTERM');
+    }
+
+    if (process.platform !== 'darwin') {
+        app.quit();
     }
 });
